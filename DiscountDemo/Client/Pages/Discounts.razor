@@ -1,0 +1,99 @@
+﻿@page "/discounts"
+
+@using Coin.Shared
+@using Coin.Shared.Models
+
+@inject IJSRuntime jsRuntime
+
+<div class="container w-50 border rounded bg-light mt-2">
+    <h2 class="mb-5 text-center">Discount Calculation Demo</h2>
+
+    <div class="">
+        <EditForm OnSubmit="@HandleSubmit" EditContext="editContext">
+            <DataAnnotationsValidator />
+            <div class="mb-3 row justify-content-center">
+                <div class="form-check form-check-inline  ml-auto mr-auto">
+                    <InputRadioGroup Name="discountType" @bind-Value="@discountType">
+                        <p class="pb-0 pr-5 mb-0">Type of Discount:</p>
+                        <InputRadio id="discountDollars" Name="discountType" Value="DiscountType.Dollars" class="form-check-input" />
+                        <label for="discountDollars" class="form-check-label pr-2">Dollars</label>
+                        <InputRadio id="discountPercent" Name="discountType" Value="DiscountType.Percent" class="form-check-input" />
+                        <label for="discountPercent" class="form-check-label pr-2">Percent</label>
+                    </InputRadioGroup>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="netTotal">Order Total:</label>
+                <InputNumber id="netTotal" @bind-Value="@currentOrder.DealerNetListTotal" class="form-control" />
+                <ValidationMessage For="@(() => currentOrder.DealerNetListTotal)" />
+            </div>
+            <div class="form-group">
+                <label class="col-form-label" for="discountAmount">Discount Amount:</label>
+                <InputNumber id="discountAmount" @bind-Value="@currentOrder.DiscountAmount" class="form-control tooltip" />
+                <ValidationMessage For="@(() => currentOrder.DiscountAmount)" />
+            </div>
+            <div class="form-group">
+                <label class="col-form-label" for="discountDollarAmount">Discount Dollar Amount:</label>
+                <InputNumber id="discountDollarAmount" @bind-Value="@currentOrder.DiscountDollarAmount" class="form-control" disabled />
+            </div>
+
+            <div class="form-group">
+                <label class="col-form-label" for="orderTotal">Total After Discount:</label>
+                <InputNumber id="orderTotal" @bind-Value="@currentOrder.OrderTotal" class="form-control mb-5" disabled />
+            </div>
+
+            <button class="btn btn-primary float-right mt-3" type="submit">Calculate</button>
+        </EditForm>
+    </div>
+</div>
+
+
+@code {
+    private ODataOrderHeader currentOrder = new ODataOrderHeader();
+    private DiscountType discountType;
+    private EditContext editContext;
+
+    protected override void OnInitialized()
+    {
+        discountType = DiscountType.Dollars;
+        editContext = new EditContext(currentOrder);
+        base.OnInitialized();
+    }
+
+    private void HandleSubmit()
+    {
+        var isValid = editContext.Validate();
+        if (isValid)
+            HandleValidSubmit();
+    }
+
+    private void HandleValidSubmit()
+    {
+        DdfDiscount discount = new DdfDiscount()
+        {
+            DiscountAmount = currentOrder.DiscountAmount
+        };
+
+        try
+        {
+            DiscountEngine de = new DiscountEngine(discountType);
+            de.Apply(currentOrder, discount);
+        }
+        catch (Exception ex)
+        {
+            jsRuntime.InvokeVoidAsync("alert", ex.Message);
+            ClearCalculatedDiscount();
+            editContext.NotifyFieldChanged(new FieldIdentifier(currentOrder, "DiscountAmount"));
+            //editContext.NotifyValidationStateChanged();
+        }
+    }
+
+    private void ClearCalculatedDiscount()
+    {
+        currentOrder.DiscountAmount = 0;
+        currentOrder.DiscountDollarAmount = 0;
+        currentOrder.OrderTotal = 0;
+    }
+
+}
