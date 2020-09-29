@@ -30,7 +30,7 @@
             </div>
             <div class="form-group">
                 <label class="col-form-label" for="discountAmount">Discount Amount:</label>
-                <InputNumber id="discountAmount" @bind-Value="@currentOrder.DiscountAmount" class="form-control tooltip" />
+                <InputNumber id="discountAmount" @bind-Value="@currentOrder.DiscountAmount" class="form-control" />
                 <ValidationMessage For="@(() => currentOrder.DiscountAmount)" />
             </div>
             <div class="form-group">
